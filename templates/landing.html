@@ -99,11 +99,6 @@
   .topbar-links a{ color:var(--muted); text-decoration:none; }
   .topbar-links a:hover{ color:var(--paper); }
 
-  @media (max-width: 760px){
-    .topbar-links{ display:none; }
-    .mobile-menu-btn{ display:flex; }
-  }
-
   .mobile-menu-btn{
     display:none;
     align-items:center; justify-content:center;
@@ -112,6 +107,11 @@
   }
   .mobile-menu-btn:active{ background:rgba(255,255,255,0.1); }
   .mobile-menu-btn svg{ width:24px; height:24px; }
+
+  @media (max-width: 760px){
+    .topbar-links{ display:none; }
+    .mobile-menu-btn{ display:flex; }
+  }
 
   .mobile-nav{
     display:none; flex-direction:column; background:var(--ink-2);
