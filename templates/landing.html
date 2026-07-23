@@ -101,7 +101,32 @@
 
   @media (max-width: 760px){
     .topbar-links{ display:none; }
+    .mobile-menu-btn{ display:flex; }
   }
+
+  .mobile-menu-btn{
+    display:none;
+    align-items:center; justify-content:center;
+    background:transparent; border:none; color:var(--paper); cursor:pointer;
+    padding:8px; border-radius:8px;
+  }
+  .mobile-menu-btn:active{ background:rgba(255,255,255,0.1); }
+  .mobile-menu-btn svg{ width:24px; height:24px; }
+
+  .mobile-nav{
+    display:none; flex-direction:column; background:var(--ink-2);
+    position:absolute; top:75px; left:6vw; right:6vw;
+    border:1px solid var(--line); border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:100;
+    overflow:hidden;
+  }
+  .mobile-nav.open{ display:flex; }
+  .mobile-nav a{
+    padding:16px 20px; color:var(--paper); text-decoration:none;
+    border-bottom:1px solid var(--line); font-size:14.5px; font-weight:600;
+  }
+  .mobile-nav a:last-child{ border-bottom:none; }
+  .mobile-nav a:active{ background:rgba(255,255,255,0.05); }
 
   /* ---------- layout ---------- */
   .hero-inner{
@@ -578,7 +603,18 @@
       <a href="{{ url_for('driver_login_page') }}">Driver Login</a>
       <a href="{{ url_for('admin_login_page') }}">Admin Login</a>
     </nav>
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
   </div>
+  <nav class="mobile-nav" id="mobileNav">
+    <a href="#parents">Parents</a>
+    <a href="#schools">Schools</a>
+    <a href="#drivers">Drivers</a>
+    <a href="#contact">Contact</a>
+    <a href="{{ url_for('driver_login_page') }}">Driver Login</a>
+    <a href="{{ url_for('admin_login_page') }}">Admin Login</a>
+  </nav>
 
   <div class="hero-inner">
 
@@ -915,6 +951,17 @@
   }
   tick();
   setInterval(tick, 1000);
+
+  var menuBtn = document.getElementById('mobileMenuBtn');
+  var mobileNav = document.getElementById('mobileNav');
+  if(menuBtn && mobileNav){
+    menuBtn.addEventListener('click', function(){
+      mobileNav.classList.toggle('open');
+    });
+    mobileNav.querySelectorAll('a').forEach(function(link){
+      link.addEventListener('click', function(){ mobileNav.classList.remove('open'); });
+    });
+  }
 </script>
 
 </body>

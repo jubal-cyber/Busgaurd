@@ -82,8 +82,9 @@
   .btn-small{ padding:7px 12px; font-size:12.5px; }
 
   table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .table-responsive{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:10px; }
   th{ text-align:left; color:var(--muted); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; padding:9px 10px; border-bottom:1px solid var(--line); }
-  td{ padding:11px 10px; border-bottom:1px solid var(--line); }
+  td{ padding:11px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
   tr:last-child td{ border-bottom:none; }
   .empty-row td{ color:var(--muted); text-align:center; padding:22px 10px; font-style:italic; }
 
@@ -202,10 +203,12 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           All Drivers
         </div>
-        <table>
-          <thead><tr><th>Driver ID</th><th>Name</th><th>Phone</th><th>Assigned Bus</th><th></th></tr></thead>
-          <tbody id="driversTableBody"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Driver ID</th><th>Name</th><th>Phone</th><th>Assigned Bus</th><th></th></tr></thead>
+            <tbody id="driversTableBody"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -243,10 +246,12 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
           All Buses
         </div>
-        <table>
-          <thead><tr><th>Bus Number</th><th>Route</th><th>Driver</th><th>Journey Status</th><th>Actions</th></tr></thead>
-          <tbody id="busesTableBody"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Bus Number</th><th>Route</th><th>Driver</th><th>Journey Status</th><th>Actions</th></tr></thead>
+            <tbody id="busesTableBody"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -268,10 +273,12 @@
         <p class="page-sub">Which drivers are assigned to a bus and their current journey activity.</p>
       </div>
       <div class="card">
-        <table>
-          <thead><tr><th>Driver</th><th>Driver ID</th><th>Assigned Bus</th><th>Journey Status</th></tr></thead>
-          <tbody id="driverStatusBody"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Driver</th><th>Driver ID</th><th>Assigned Bus</th><th>Journey Status</th></tr></thead>
+            <tbody id="driverStatusBody"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -283,10 +290,12 @@
       </div>
       <div class="stat-row" id="journeyStats"></div>
       <div class="card">
-        <table>
-          <thead><tr><th>Bus Number</th><th>Route</th><th>Driver</th><th>Status</th><th>Last Update</th><th>Actions</th></tr></thead>
-          <tbody id="journeyStatusBody"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Bus Number</th><th>Route</th><th>Driver</th><th>Status</th><th>Last Update</th><th>Actions</th></tr></thead>
+            <tbody id="journeyStatusBody"><tr class="empty-row"><td colspan="6">Loading…</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
