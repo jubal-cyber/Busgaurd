@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Driver Dashboard · BusGuard</title>
+<style>
+  :root{
+    --ink:        #0B1F3A;
+    --ink-2:      #122B52;
+    --ink-3:      #1B3A6B;
+    --line:       rgba(255,255,255,0.12);
+    --paper:      #F6F8FC;
+    --muted:      #93A8CC;
+    --amber:      #FF7A33;
+    --amber-dim:  #C25A22;
+    --mint:       #2FE6B0;
+    --red:        #FF6B6B;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--ink); color:var(--paper);
+    font-family:-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  button{ font-family:inherit; }
+  .bg-grid{
+    position:fixed; inset:0;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 10%, transparent 75%);
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 10%, transparent 75%);
+    opacity:0.5; pointer-events:none;
+  }
+  .page{ position:relative; z-index:1; max-width:480px; margin:0 auto; padding:28px 20px 60px; }
+  .header-card{
+    background:linear-gradient(165deg, var(--ink-2), var(--ink-3));
+    border:1px solid var(--line); border-radius:18px; padding:22px 22px 24px; margin-bottom:22px;
+  }
+  .brand-row{ display:flex; align-items:center; gap:10px; font-family:Georgia, serif; font-size:17px; margin-bottom:16px; }
+  .brand-mark{
+    width:32px; height:32px; border-radius:9px;
+    background: linear-gradient(155deg, var(--amber), var(--amber-dim));
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand-mark svg{ width:17px; height:17px; }
+  .dash-title{ font-family:Georgia, Cambria, "Times New Roman", serif; font-size:24px; margin:0 0 6px; }
+  .dash-welcome{ font-size:13.5px; color:var(--muted); margin:0; }
+  .section-label{
+    display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--muted); margin:0 0 10px;
+  }
+  .section-label svg{ width:14px; height:14px; color:var(--mint); }
+  .status-card, .info-card{
+    background:var(--ink-2); border:1px solid var(--line); border-radius:16px; padding:18px 20px;
+  }
+  .status-row{ display:flex; align-items:center; justify-content:space-between; }
+  .status-row-label{ font-size:13.5px; color:var(--muted); }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700;
+    padding:6px 12px; border-radius:100px; letter-spacing:0.02em;
+  }
+  .status-pill .dot{ width:7px; height:7px; border-radius:50%; }
+  .status-pill.state-neutral{ background:rgba(147,168,204,0.12); color:var(--muted); }
+  .status-pill.state-neutral .dot{ background:var(--muted); }
+  .status-pill.state-active{ background:rgba(47,230,176,0.14); color:var(--mint); }
+  .status-pill.state-active .dot{ background:var(--mint); animation:pulse 1.4s ease-in-out infinite; }
+  .status-pill.state-off{ background:rgba(255,107,107,0.12); color:var(--red); }
+  .status-pill.state-off .dot{ background:var(--red); }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
+  .status-divider{ height:1px; background:var(--line); margin:16px 0; }
+  .route-label{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; }
+  .route-value{ font-size:14.5px; font-weight:600; }
+  .card-gap{ margin-bottom:16px; }
+  .action-stack{ display:flex; flex-direction:column; gap:12px; margin-bottom:22px; }
+  .action-btn{
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    font-size:14.5px; font-weight:700; padding:15px; border-radius:13px; border:none; cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+  }
+  .action-btn svg{ width:17px; height:17px; }
+  .action-btn.primary{ background:var(--amber); color:#241002; box-shadow:0 14px 30px -14px rgba(255,122,51,0.55); }
+  .action-btn.primary:hover:not(:disabled){ transform:translateY(-1px); }
+  .action-btn.secondary{ background:var(--ink-3); color:var(--paper); border:1px solid var(--line); }
+  .action-btn.secondary:hover:not(:disabled){ border-color:var(--mint); color:var(--mint); }
+  .action-btn.danger{ background:transparent; color:var(--red); border:1px solid rgba(255,107,107,0.35); }
+  .action-btn.danger:hover:not(:disabled){ background:rgba(255,107,107,0.08); }
+  .action-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  .action-note{ text-align:center; font-size:12.5px; color:var(--mint); min-height:16px; padding-top:2px; }
+  .info-row{ display:flex; align-items:flex-start; gap:12px; padding:10px 0; }
+  .info-row + .info-row{ border-top:1px solid var(--line); }
+  .info-icon-sm{
+    width:30px; height:30px; border-radius:8px; background:var(--ink-3); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .info-icon-sm svg{ width:15px; height:15px; color:var(--mint); }
+  .info-label{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px; }
+  .info-value{ font-size:14px; font-weight:600; }
+  .info-value.is-waiting{ color:var(--muted); font-weight:500; font-style:italic; }
+  .info-value.is-live{ color:var(--mint); }
+  .logout-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:9px;
+    background:transparent; color:var(--muted); font-size:13.5px; font-weight:600; padding:14px;
+    border:1px solid var(--line); border-radius:12px; margin-top:26px; cursor:pointer;
+    transition:color .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .logout-btn svg{ width:15px; height:15px; flex-shrink:0; }
+  .logout-btn:hover{ color:var(--paper); border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.03); }
+  button:focus-visible, a:focus-visible{ outline:2px solid var(--mint); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<div class="page">
+
+  <div class="header-card">
+    <div class="brand-row">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 16V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8M4 16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M4 16h16M8 6V4h8v2" stroke="#241002" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="18.5" r="1.4" fill="#241002"/><circle cx="16" cy="18.5" r="1.4" fill="#241002"/></svg>
+      </span>
+      BusGuard
+    </div>
+    <h1 class="dash-title">Driver Dashboard</h1>
+    <p class="dash-welcome">Welcome, {{ driver['name'] if driver else 'Driver' }}{% if bus %} · Bus {{ bus['bus_number'] }}{% endif %}</p>
+  </div>
+
+  {% if not bus %}
+  <div class="status-card card-gap" style="border-color: rgba(255,107,107,0.35);">
+    <span class="status-row-label" style="color:#FF6B6B;">No bus is assigned to your account yet. Ask your admin to assign one from Bus Management.</span>
+  </div>
+  {% endif %}
+
+  <div class="section-label">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    Journey Status
+  </div>
+  <div class="status-card card-gap">
+    <div class="status-row">
+      <span class="status-row-label">Current State</span>
+      <span class="status-pill state-neutral" id="journeyPill">
+        <span class="dot"></span>
+        <span id="journeyPillText">Ready to Start</span>
+      </span>
+    </div>
+    <div class="status-divider"></div>
+    <div class="route-label">Assigned Bus</div>
+    <div class="route-value">{{ bus['bus_number'] if bus else '—' }}{% if bus and bus['route'] %} &middot; {{ bus['route'] }}{% endif %}</div>
+  </div>
+
+  <div class="section-label">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21s7-6.5 7-11a7 7 0 0 0-14 0c0 4.5 7 11 7 11z"/></svg>
+    Location Sharing
+  </div>
+  <div class="status-card card-gap">
+    <div class="status-row">
+      <span class="status-row-label">Status</span>
+      <span class="status-pill state-off" id="sharingPill">
+        <span class="dot"></span>
+        <span id="sharingPillText">Not Sharing</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="action-stack">
+    <button class="action-btn primary" id="startBtn" type="button" {% if not bus %}disabled{% endif %}>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      Start Journey
+    </button>
+    <button class="action-btn secondary" id="shareBtn" type="button" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21s7-6.5 7-11a7 7 0 0 0-14 0c0 4.5 7 11 7 11z"/></svg>
+      Share Live Location
+    </button>
+    <button class="action-btn danger" id="endBtn" type="button" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      End Journey
+    </button>
+    <div class="action-note" id="actionNote">&nbsp;</div>
+  </div>
+
+  <div class="section-label">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21s7-6.5 7-11a7 7 0 0 0-14 0c0 4.5 7 11 7 11z"/></svg>
+    Journey Information
+  </div>
+  <div class="info-card card-gap">
+    <div class="info-row">
+      <span class="info-icon-sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      </span>
+      <div class="info-copy">
+        <div class="info-label">Current Location</div>
+        <div class="info-value is-waiting" id="currentLocation">Waiting...</div>
+      </div>
+    </div>
+    <div class="info-row">
+      <span class="info-icon-sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"/></svg>
+      </span>
+      <div class="info-copy">
+        <div class="info-label">Assigned Bus</div>
+        <div class="info-value">{{ bus['bus_number'] if bus else 'Not assigned' }}</div>
+      </div>
+    </div>
+    <div class="info-row">
+      <span class="info-icon-sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+      <div class="info-copy">
+        <div class="info-label">Journey Status</div>
+        <div class="info-value" id="journeyInfoStatus">Not Started</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="logout-btn" id="logoutBtn" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    Logout
+  </button>
+
+</div>
+
+<script>
+  var startBtn = document.getElementById('startBtn');
+  var shareBtn = document.getElementById('shareBtn');
+  var endBtn   = document.getElementById('endBtn');
+  var logoutBtn = document.getElementById('logoutBtn');
+
+  var journeyPill = document.getElementById('journeyPill');
+  var journeyPillText = document.getElementById('journeyPillText');
+  var sharingPill = document.getElementById('sharingPill');
+  var sharingPillText = document.getElementById('sharingPillText');
+  var journeyInfoStatus = document.getElementById('journeyInfoStatus');
+  var currentLocation = document.getElementById('currentLocation');
+  var actionNote = document.getElementById('actionNote');
+
+  var watchId = null;
+  var pingTimer = null;
+  var lastPosition = null;
+
+  function setPill(el, textEl, state, text){
+    el.classList.remove('state-neutral', 'state-active', 'state-off');
+    el.classList.add(state);
+    textEl.textContent = text;
+  }
+  function setNote(text, isError){
+    actionNote.textContent = text;
+    actionNote.style.color = isError ? '#FF6B6B' : '#2FE6B0';
+  }
+
+  function sendLocation(lat, lng){
+    fetch("{{ url_for('post_location') }}", {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({latitude: lat, longitude: lng})
+    }).catch(function(){ /* keep trying silently */ });
+  }
+
+  startBtn.addEventListener('click', function(){
+    fetch("{{ url_for('journey_start') }}", { method: 'POST', credentials: 'same-origin' })
+      .then(function(res){ return res.json().then(function(data){ return {status: res.status, data: data}; }); })
+      .then(function(result){
+        if(result.status !== 200){
+          setNote(result.data.error || 'Could not start journey.', true);
+          return;
+        }
+        setPill(journeyPill, journeyPillText, 'state-active', 'Journey Started');
+        journeyInfoStatus.textContent = 'In Progress';
+        startBtn.disabled = true;
+        shareBtn.disabled = false;
+        endBtn.disabled = false;
+        setNote('Journey started. You can now share your live location.');
+      });
+  });
+
+  shareBtn.addEventListener('click', function(){
+    if(!navigator.geolocation){
+      setNote('Your browser does not support location sharing.', true);
+      return;
+    }
+
+    setPill(sharingPill, sharingPillText, 'state-active', 'Sharing Live Location');
+    shareBtn.disabled = true;
+    currentLocation.classList.remove('is-waiting');
+    currentLocation.classList.add('is-live');
+    setNote('Requesting GPS permission…');
+
+    watchId = navigator.geolocation.watchPosition(
+      function(pos){
+        lastPosition = pos.coords;
+        currentLocation.textContent = pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5);
+        setNote('Your location is now visible on the public tracking page.');
+      },
+      function(err){
+        setNote('GPS error: ' + err.message, true);
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+
+    // Send a location ping every 2.5 seconds, as per the roadmap.
+    clearInterval(pingTimer);
+    pingTimer = setInterval(function(){
+      if(lastPosition){
+        sendLocation(lastPosition.latitude, lastPosition.longitude);
+      }
+    }, 2500);
+  });
+
+  endBtn.addEventListener('click', function(){
+    fetch("{{ url_for('journey_end') }}", { method: 'POST', credentials: 'same-origin' })
+      .then(function(res){ return res.json().then(function(data){ return {status: res.status, data: data}; }); })
+      .then(function(result){
+        if(result.status !== 200){
+          setNote(result.data.error || 'Could not end journey.', true);
+          return;
+        }
+        setPill(journeyPill, journeyPillText, 'state-off', 'Journey Ended');
+        setPill(sharingPill, sharingPillText, 'state-off', 'Not Sharing');
+        journeyInfoStatus.textContent = 'Ended';
+
+        if(watchId !== null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+        clearInterval(pingTimer);
+        lastPosition = null;
+
+        currentLocation.textContent = 'Waiting...';
+        currentLocation.classList.remove('is-live');
+        currentLocation.classList.add('is-waiting');
+
+        startBtn.disabled = false;
+        shareBtn.disabled = true;
+        endBtn.disabled = true;
+
+        setNote('Journey ended. Location sharing has stopped.');
+      });
+  });
+
+  logoutBtn.addEventListener('click', function(){
+    fetch("{{ url_for('api_driver_logout') }}", { method: 'POST', credentials: 'same-origin' })
+      .then(function(res){ return res.json(); })
+      .then(function(data){ window.location.href = data.redirect; });
+  });
+
+  // Initialize UI state based on current journey status
+  var initialJourneyStatus = "{{ bus['journey_status'] if bus else '' }}";
+  
+  if (initialJourneyStatus === 'in_progress') {
+    setPill(journeyPill, journeyPillText, 'state-active', 'Journey Started');
+    journeyInfoStatus.textContent = 'In Progress';
+    startBtn.disabled = true;
+    shareBtn.disabled = false;
+    endBtn.disabled = false;
+    setNote('Journey is in progress. You can share your live location.');
+  } else if (initialJourneyStatus === 'ended') {
+    setPill(journeyPill, journeyPillText, 'state-off', 'Journey Ended');
+    journeyInfoStatus.textContent = 'Ended';
+  }
+</script>
+
+</body>
+</html>

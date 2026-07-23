@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Bus · BusGuard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --ink:        #0B1F3A;
+    --ink-2:      #122B52;
+    --ink-3:      #1B3A6B;
+    --line:       rgba(255,255,255,0.12);
+    --paper:      #F6F8FC;
+    --muted:      #93A8CC;
+    --amber:      #FF7A33;
+    --amber-dim:  #C25A22;
+    --mint:       #2FE6B0;
+    --red:        #FF6B6B;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--ink); color:var(--paper);
+    font-family:-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height:100vh;
+  }
+  button, input{ font-family:inherit; }
+  a{ color:inherit; text-decoration:none; }
+
+  .bg-grid{
+    position:fixed; inset:0;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 10%, transparent 75%);
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 10%, transparent 75%);
+    opacity:0.5; pointer-events:none;
+  }
+
+  .page{ position:relative; z-index:1; max-width:720px; margin:0 auto; padding:28px 20px 60px; }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:Georgia, serif; font-size:18px; }
+  .brand-mark{
+    width:32px; height:32px; border-radius:9px;
+    background: linear-gradient(155deg, var(--amber), var(--amber-dim));
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand-mark svg{ width:17px; height:17px; }
+  .back-link{ font-size:13.5px; font-weight:600; color:var(--muted); display:flex; align-items:center; gap:6px; }
+  .back-link svg{ width:14px; height:14px; }
+  .back-link:hover{ color:var(--paper); }
+
+  .page-title{ font-family:Georgia, Cambria, "Times New Roman", serif; font-size:26px; margin:0 0 6px; }
+  .page-sub{ font-size:13.5px; color:var(--muted); margin:0 0 22px; }
+
+  .search-card{
+    background:linear-gradient(165deg, var(--ink-2), var(--ink-3));
+    border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:20px;
+  }
+  .search-row{ display:flex; gap:10px; }
+  .search-row input{
+    flex:1; background:var(--ink); border:1px solid var(--line); color:var(--paper);
+    font-size:14.5px; padding:12px 14px; border-radius:11px; outline:none;
+  }
+  .search-row input:focus{ border-color:var(--mint); box-shadow:0 0 0 3px rgba(47,230,176,0.15); }
+  .search-row button{
+    background:var(--amber); color:#241002; font-weight:700; font-size:14.5px; border:none;
+    padding:12px 20px; border-radius:11px; cursor:pointer; display:flex; align-items:center; gap:8px;
+    box-shadow:0 14px 30px -14px rgba(255,122,51,0.55);
+  }
+  .search-row button:hover{ transform:translateY(-1px); }
+  .search-row button svg{ width:15px; height:15px; }
+
+  .bus-suggestions{ margin-top:12px; font-size:12.5px; color:var(--muted); }
+  .bus-suggestions a{ color:var(--mint); font-weight:600; margin-right:12px; }
+  .bus-suggestions a:hover{ text-decoration:underline; }
+
+  .status-note{ font-size:13px; min-height:18px; margin-top:12px; }
+  .status-note.err{ color:var(--red); }
+  .status-note.ok{ color:var(--mint); }
+
+  .result-card{
+    background:var(--ink-2); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:16px; display:none;
+  }
+  .result-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .result-bus{ font-size:18px; font-weight:700; }
+  .pill{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; padding:5px 11px; border-radius:100px; }
+  .pill .dot{ width:6px; height:6px; border-radius:50%; }
+  .pill.status-not_started{ background:rgba(147,168,204,0.12); color:var(--muted); }
+  .pill.status-not_started .dot{ background:var(--muted); }
+  .pill.status-in_progress{ background:rgba(47,230,176,0.14); color:var(--mint); }
+  .pill.status-in_progress .dot{ background:var(--mint); animation:pulse 1.4s ease-in-out infinite; }
+  .pill.status-ended{ background:rgba(255,122,51,0.14); color:var(--amber); }
+  .pill.status-ended .dot{ background:var(--amber); }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
+
+  .result-meta{ display:flex; flex-wrap:wrap; gap:18px; font-size:13px; color:var(--muted); margin-bottom:4px; }
+  .result-meta b{ color:var(--paper); }
+
+  #map{ height:400px; border-radius:14px; overflow:hidden; border:1px solid var(--line); display:none; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+
+<div class="page">
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 16V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8M4 16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M4 16h16M8 6V4h8v2" stroke="#241002" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="18.5" r="1.4" fill="#241002"/><circle cx="16" cy="18.5" r="1.4" fill="#241002"/></svg>
+      </span>
+      BusGuard
+    </div>
+    <a class="back-link" href="{{ url_for('landing') }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Home
+    </a>
+  </div>
+
+  <h1 class="page-title">Track Your Bus</h1>
+  <p class="page-sub">No login required. Enter a bus number to see its live location.</p>
+
+  <div class="search-card">
+    <div class="search-row">
+      <input type="text" id="busInput" placeholder="e.g. TN-07-BG-21" autocomplete="off">
+      <button id="searchBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        Track
+      </button>
+    </div>
+    <div class="bus-suggestions" id="busSuggestions"></div>
+    <div class="status-note" id="statusNote"></div>
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-head">
+      <span class="result-bus" id="resultBusNumber">—</span>
+      <span class="pill" id="resultPill"><span class="dot"></span><span id="resultPillText">—</span></span>
+    </div>
+    <div class="result-meta">
+      <div>Route: <b id="resultRoute">—</b></div>
+      <div>Driver: <b id="resultDriver">—</b></div>
+      <div>Last update: <b id="resultUpdated">—</b></div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script>
+  var busInput = document.getElementById('busInput');
+  var searchBtn = document.getElementById('searchBtn');
+  var statusNote = document.getElementById('statusNote');
+  var resultCard = document.getElementById('resultCard');
+  var mapEl = document.getElementById('map');
+  var busSuggestions = document.getElementById('busSuggestions');
+
+  var map = null;
+  var marker = null;
+  var pollTimer = null;
+  var currentBus = null;
+
+  // Pull the initial bus number from ?bus=XXX if present
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('bus')){
+    busInput.value = params.get('bus');
+  }
+
+  function loadBusList(){
+    fetch("{{ url_for('public_bus_list') }}").then(function(r){ return r.json(); }).then(function(buses){
+      if(!buses.length) return;
+      busSuggestions.innerHTML = 'Registered buses: ' + buses.map(function(b){
+        return '<a href="#" data-bus="' + b.bus_number + '">' + b.bus_number + '</a>';
+      }).join('');
+      busSuggestions.querySelectorAll('a').forEach(function(a){
+        a.addEventListener('click', function(e){
+          e.preventDefault();
+          busInput.value = a.dataset.bus;
+          trackBus();
+        });
+      });
+    });
+  }
+
+  function initMap(){
+    if(map) return;
+    mapEl.style.display = 'block';
+    map = L.map('map').setView([12.9165, 80.1273], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map);
+  }
+
+  var STATUS_LABELS = { not_started: 'Not Started', in_progress: 'Live', ended: 'Ended' };
+
+  function trackBus(){
+    var busNumber = busInput.value.trim();
+    if(!busNumber){
+      statusNote.className = 'status-note err';
+      statusNote.textContent = 'Enter a bus number to track.';
+      return;
+    }
+    currentBus = busNumber;
+    clearInterval(pollTimer);
+    fetchLocation();
+    pollTimer = setInterval(fetchLocation, 3000);
+  }
+
+  function fetchLocation(){
+    fetch("{{ url_for('public_location', bus_number='__BUS__') }}".replace('__BUS__', encodeURIComponent(currentBus)))
+      .then(function(res){ return res.json().then(function(data){ return {status: res.status, data: data}; }); })
+      .then(function(result){
+        if(result.status !== 200){
+          statusNote.className = 'status-note err';
+          statusNote.textContent = result.data.error || 'Bus not found.';
+          resultCard.style.display = 'none';
+          mapEl.style.display = 'none';
+          clearInterval(pollTimer);
+          return;
+        }
+        var b = result.data;
+        statusNote.textContent = '';
+        resultCard.style.display = 'block';
+
+        document.getElementById('resultBusNumber').textContent = b.bus_number;
+        document.getElementById('resultRoute').textContent = b.route || '—';
+        document.getElementById('resultDriver').textContent = b.driver_name || '—';
+
+        var pill = document.getElementById('resultPill');
+        pill.className = 'pill status-' + b.journey_status;
+        document.getElementById('resultPillText').textContent = STATUS_LABELS[b.journey_status];
+
+        if(b.location){
+          document.getElementById('resultUpdated').textContent = new Date(b.location.timestamp).toLocaleTimeString();
+          initMap();
+          var latlng = [b.location.latitude, b.location.longitude];
+          if(marker){
+            marker.setLatLng(latlng);
+          } else {
+            marker = L.marker(latlng).addTo(map);
+          }
+          marker.bindPopup('<b>' + b.bus_number + '</b><br>' + (b.driver_name || 'Driver not set'));
+          map.setView(latlng, map.getZoom() < 13 ? 15 : map.getZoom());
+        } else {
+          document.getElementById('resultUpdated').textContent = 'No GPS signal yet';
+          mapEl.style.display = 'none';
+        }
+      })
+      .catch(function(){
+        statusNote.className = 'status-note err';
+        statusNote.textContent = 'Network error. Retrying…';
+      });
+  }
+
+  searchBtn.addEventListener('click', trackBus);
+  busInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ trackBus(); }
+  });
+
+  loadBusList();
+  if(busInput.value.trim()){ trackBus(); }
+</script>
+
+</body>
+</html>
